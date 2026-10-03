@@ -3,88 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SVA Badminton - Hobbyliga</title>
+    <title>Hobbyligasaison 25/26</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --sva-green: #1a4731; --sva-yellow: #facc15; }
+        :root {
+            --sva-green: #1a4731;
+            --sva-yellow: #facc15;
+        }
         body { 
             background-color: var(--sva-green); 
             font-family: 'Inter', sans-serif; 
             color: #f8fafc;
-            background-image: radial-gradient(circle at top right, rgba(250, 204, 21, 0.05), transparent),
-                              linear-gradient(rgba(26, 71, 49, 0.98), rgba(26, 71, 49, 0.98));
+            background-image: linear-gradient(rgba(26, 71, 49, 0.95), rgba(26, 71, 49, 0.95)), 
+                              url('https://i0.wp.com/www.alfen.de/wp-content/uploads/2016/05/sva-logo-neu.gif');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
         }
         .match-card { 
-            background: rgba(255, 255, 255, 0.03); 
-            backdrop-filter: blur(12px);
-            border-radius: 16px; 
-            padding: 16px; 
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: transform 0.2s;
+            background: rgba(255, 255, 255, 0.1); 
+            backdrop-filter: blur(8px);
+            border-radius: 12px; 
+            padding: 12px; 
+            border-left: 4px solid var(--sva-yellow); 
+            transition: all 0.5s ease; 
         }
         .slot { 
-            min-height: 52px; 
+            min-height: 48px; 
             background: rgba(255,255,255,0.05); 
-            border: 2px dashed rgba(255,255,255,0.1); 
-            border-radius: 10px; 
+            border: 1px dashed rgba(255,255,255,0.2); 
+            border-radius: 8px; 
             display: flex; 
-            flex-direction: column;
             align-items: center; 
             justify-content: center; 
-            transition: all 0.2s;
+            margin-top: 5px; 
+            cursor: pointer; 
+            font-size: 0.9rem; 
         }
         .slot.filled { 
             border-style: solid; 
-            background: rgba(250, 204, 21, 0.1); 
+            background: rgba(250, 204, 21, 0.2); 
             border-color: var(--sva-yellow); 
         }
-        .player-chip { transition: all 0.2s; flex: 0 0 auto; }
-        .selected-glow { box-shadow: 0 0 15px var(--sva-yellow); border: 2px solid white !important; }
+        .player-chip { cursor: pointer; user-select: none; transition: all 0.2s; }
+        .custom-scrollbar::-webkit-scrollbar { height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--sva-yellow); border-radius: 10px; }
     </style>
 </head>
-<body class="p-4 pb-64">
+<body class="p-4 pb-48">
 
-    <header class="mb-6 text-center pt-2">
-        <div class="bg-white p-2 rounded-full w-16 h-16 mx-auto mb-3 shadow-xl">
-            <img src="https://i0.wp.com/www.alfen.de/wp-content/uploads/2016/05/sva-logo-neu.gif" alt="SVA Logo" class="w-full h-full object-contain">
-        </div>
-        <h1 class="text-xl font-black text-white uppercase tracking-tighter">Aufstellungs-Planer</h1>
-        <p class="text-[10px] text-yellow-400 font-bold uppercase tracking-widest opacity-80">SVA Alfen - Hobbyliga 25/26</p>
+    <header class="mb-8 text-center pt-4">
+        <img src="https://i0.wp.com/www.alfen.de/wp-content/uploads/2016/05/sva-logo-neu.gif" alt="SVA Logo" class="h-16 mx-auto mb-4 drop-shadow-lg">
+        <h1 class="text-2xl font-black text-white uppercase tracking-tighter">Hobbyligasaison 25/26</h1>
     </header>
 
-    <div class="max-w-md mx-auto space-y-6">
-        <section class="space-y-3">
-            <h2 class="text-[11px] font-bold text-white/40 ml-1 uppercase tracking-widest flex justify-between">
-                <span>Einzel-Spiele</span>
-                <span id="rank-warning-e" class="text-red-400 hidden text-[9px]">Rangfolge beachten!</span>
-            </h2>
-            <div class="grid grid-cols-2 gap-3">
-                <div class="match-card" id="e1-card">
-                    <span class="text-[9px] font-bold opacity-50 block mb-2">1. EINZEL</span>
-                    <div class="slot" onclick="handleSlotClick('e', 0)">Wählen...</div>
-                </div>
-                <div class="match-card" id="e2-card">
-                    <span class="text-[9px] font-bold opacity-50 block mb-2">2. EINZEL</span>
-                    <div class="slot" onclick="handleSlotClick('e', 1)">Wählen...</div>
-                </div>
+    <div class="max-w-md mx-auto space-y-8" id="match-container">
+        <div class="space-y-3">
+            <h2 class="text-[10px] font-bold text-yellow-400/80 ml-1 uppercase tracking-widest">Einzel Aufstellung</h2>
+            <div class="match-card" id="e1">
+                <h3 class="font-bold text-xs text-white/70 mb-1">1. EINZEL</h3>
+                <div class="slot" onclick="handleSlotClick(this, 'einzel')">Besetzen...</div>
             </div>
-        </section>
+            <div class="match-card" id="e2">
+                <h3 class="font-bold text-xs text-white/70 mb-1">2. EINZEL</h3>
+                <div class="slot" onclick="handleSlotClick(this, 'einzel')">Besetzen...</div>
+            </div>
+        </div>
 
-        <section class="space-y-3">
-            <h2 class="text-[11px] font-bold text-white/40 ml-1 uppercase tracking-widest">Doppel-Spiele</h2>
+        <div class="space-y-3">
+            <h2 class="text-[10px] font-bold text-yellow-400/80 ml-1 uppercase tracking-widest">Doppel Aufstellung</h2>
             <div id="doppel-list" class="space-y-3"></div>
-        </section>
-
-        <button onclick="copyToClipboard()" class="w-full py-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-xs font-bold transition-all uppercase tracking-widest">
-            📋 Aufstellung kopieren
-        </button>
+        </div>
     </div>
 
-    <div class="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-xl border-t border-white/10 shadow-2xl">
-        <div class="p-2 text-center">
-            <span class="text-[9px] font-bold text-yellow-400/60 uppercase">Spieler auswählen & oben Feld anklicken</span>
+    <div class="fixed bottom-0 left-0 right-0 z-50">
+        <div class="bg-slate-900/90 backdrop-blur-md border-t border-white/10 p-4">
+            <div id="bench" class="flex gap-2 overflow-x-auto pb-4 custom-scrollbar"></div>
+            
+            <div class="mt-4 text-center">
+                <a href="https://dbv.turnier.de/sport/team.aspx?id=E4A5657E-EF6C-488C-958B-BE46490FD7E7&team=67" 
+                   target="_blank" 
+                   class="inline-flex items-center text-[11px] text-yellow-400 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-full border border-yellow-400/30">
+                    📊 Offizielle Staffel-Tabelle öffnen
+                </a>
+            </div>
         </div>
-        <div id="bench" class="flex gap-2 overflow-x-auto px-4 pb-6 pt-1 custom-scrollbar"></div>
     </div>
 
     <script>
@@ -110,14 +113,9 @@
                 const count = getUsage(p.id);
                 const isSelected = selectedPlayerId === p.id;
                 const div = document.createElement('div');
-                div.className = `player-chip px-4 py-3 rounded-xl text-sm font-bold shadow-md ${isSelected ? 'bg-yellow-400 text-green-900 scale-110 selected-glow' : 'bg-white/10 text-white'} ${count >= 2 ? 'opacity-20 grayscale' : ''}`;
-                div.innerHTML = `<span class="text-[10px] block opacity-50">R${p.rank}</span>${p.name}`;
-                div.onclick = () => {
-                    if(count < 2 || isSelected) {
-                        selectedPlayerId = isSelected ? null : p.id;
-                        render();
-                    }
-                };
+                div.className = `player-chip shrink-0 px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all ${isSelected ? 'bg-yellow-400 text-green-900 scale-105' : 'bg-white/10 text-white'} ${count >= 2 ? 'opacity-20 grayscale' : ''}`;
+                div.innerHTML = `<span class="opacity-60 mr-1">${p.rank}.</span> ${p.name}`;
+                div.onclick = () => { if(count < 2 || isSelected) { selectedPlayerId = isSelected ? null : p.id; render(); } };
                 bench.appendChild(div);
             });
         }
@@ -129,46 +127,46 @@
         }
 
         function renderEinzel() {
-            state.einzel.forEach((p, i) => {
-                const slot = document.querySelectorAll('#e1-card .slot, #e2-card .slot')[i];
-                slot.innerHTML = p ? `<span class="font-bold text-yellow-400 text-sm">${p.name}</span><span class="text-[9px] opacity-50 font-mono">Rank ${p.rank}</span>` : '<span class="opacity-30 text-xs">Wählen...</span>';
+            const assigned = state.einzel.filter(Boolean).sort((a, b) => a.rank - b.rank);
+            state.einzel = [assigned[0] || null, assigned[1] || null];
+            [0, 1].forEach(i => {
+                const slot = document.querySelectorAll('#match-container .match-card .slot')[i];
+                const p = state.einzel[i];
+                slot.innerHTML = p ? `<div class="font-bold text-yellow-400">${p.name} <span class="text-[9px] text-white/50 ml-1">R${p.rank}</span></div>` : 'Besetzen...';
                 slot.className = `slot ${p ? 'filled' : ''}`;
             });
-            
-            // Logik-Check: Rangfolge im Einzel
-            if(state.einzel[0] && state.einzel[1] && state.einzel[0].rank > state.einzel[1].rank) {
-                document.getElementById('rank-warning-e').classList.remove('hidden');
-            } else {
-                document.getElementById('rank-warning-e').classList.add('hidden');
-            }
         }
 
         function renderDoppel() {
             const list = document.getElementById('doppel-list');
+            const doppelData = state.doppel.map(pair => ({ pair, sum: (pair[0] && pair[1]) ? pair[0].rank + pair[1].rank : 999 }));
+            doppelData.sort((a, b) => a.sum - b.sum);
+            state.doppel = doppelData.map(d => d.pair);
+
             list.innerHTML = '';
             state.doppel.forEach((pair, i) => {
                 const sum = (pair[0] && pair[1]) ? pair[0].rank + pair[1].rank : null;
                 list.insertAdjacentHTML('beforeend', `
                     <div class="match-card">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-[9px] font-bold opacity-50 uppercase">${i+1}. Doppel</span>
-                            ${sum ? `<span class="text-[10px] font-bold text-yellow-400 bg-yellow-400/10 px-2 py-0.5 rounded">Summe: ${sum}</span>` : ''}
+                        <div class="flex justify-between items-center mb-1 text-[10px] font-bold text-white/50">
+                            <span>${i+1}. DOPPEL</span>
+                            ${sum ? `<span class="text-yellow-400">SUMME: ${sum}</span>` : ''}
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <div class="slot ${pair[0] ? 'filled' : ''}" onclick="handleDoppelClick(${i}, 0)">
-                                ${pair[0] ? `<span class="font-bold text-yellow-400 text-sm">${pair[0].name}</span>` : '<span class="opacity-30 text-xs">Spieler A</span>'}
+                                ${pair[0] ? `<span class="font-bold text-yellow-400">${pair[0].name}</span>` : 'Spieler A'}
                             </div>
                             <div class="slot ${pair[1] ? 'filled' : ''}" onclick="handleDoppelClick(${i}, 1)">
-                                ${pair[1] ? `<span class="font-bold text-yellow-400 text-sm">${pair[1].name}</span>` : '<span class="opacity-30 text-xs">Spieler B</span>'}
+                                ${pair[1] ? `<span class="font-bold text-yellow-400">${pair[1].name}</span>` : 'Spieler B'}
                             </div>
                         </div>
                     </div>`);
             });
         }
 
-        function handleSlotClick(type, index) {
-            const player = selectedPlayerId ? players.find(p => p.id === selectedPlayerId) : null;
-            if(type === 'e') state.einzel[index] = player;
+        function handleSlotClick(el, type) {
+            const index = Array.from(document.querySelectorAll('#e1 .slot, #e2 .slot')).indexOf(el);
+            state.einzel[index] = selectedPlayerId ? players.find(p => p.id === selectedPlayerId) : null;
             selectedPlayerId = null;
             render();
         }
@@ -177,19 +175,6 @@
             state.doppel[pairIdx][playerIdx] = selectedPlayerId ? players.find(p => p.id === selectedPlayerId) : null;
             selectedPlayerId = null;
             render();
-        }
-
-        function copyToClipboard() {
-            let text = "🏸 *SVA ALFEN AUFSTELLUNG* 🏸\n\n";
-            text += `1. Einzel: ${state.einzel[0]?.name || "---"}\n`;
-            text += `2. Einzel: ${state.einzel[1]?.name || "---"}\n\n`;
-            state.doppel.forEach((d, i) => {
-                text += `${i+1}. Doppel: ${d[0]?.name || "?"} / ${d[1]?.name || "?"}\n`;
-            });
-            
-            navigator.clipboard.writeText(text).then(() => {
-                alert("Aufstellung für WhatsApp kopiert!");
-            });
         }
 
         render();
