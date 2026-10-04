@@ -69,6 +69,8 @@
     </header>
 
     <div class="max-w-md mx-auto space-y-8" id="match-container">
+        <p id="assignment-status" class="text-sm text-yellow-300" role="status" aria-live="polite"></p>
+
         <div class="space-y-3">
             <h2 class="text-[10px] font-bold text-yellow-400/80 ml-1 uppercase tracking-widest">Einzel Aufstellung</h2>
             <div class="match-card" id="e1">
@@ -85,6 +87,15 @@
             <h2 class="text-[10px] font-bold text-yellow-400/80 ml-1 uppercase tracking-widest">Doppel Aufstellung</h2>
             <div id="doppel-list" class="space-y-3"></div>
         </div>
+
+        <details class="rounded-xl border border-white/15 bg-white/5 p-4 text-sm text-white/80">
+            <summary class="cursor-pointer font-bold text-yellow-400">Aufstellungsregeln anzeigen</summary>
+            <div class="mt-3">
+                <p id="roster-count" class="mb-2"></p>
+                <p>Alle Spiele können männlich, weiblich oder mixed besetzt werden. Einzel und die ersten beiden Doppel werden nach Ranglistenstärke aufgestellt. Bei Punktgleichheit der Doppel spielt das Doppel mit dem stärksten Einzelspieler an Position 1.</p>
+                <p class="mt-2">Pro Person sind ein Einzel und ein Doppel oder zwei Doppel erlaubt. Nicht erlaubt ist ein Einsatz zugleich im 1. und 2. Doppel; ein Einsatz im 3. Doppel ist zusätzlich möglich. Falsche Aufstellungen führen zum Spielverlust der betroffenen Begegnung.</p>
+            </div>
+        </details>
     </div>
 
     <div class="fixed bottom-0 left-0 right-0 z-50">
@@ -106,6 +117,7 @@
     </div>
 
     <script>
+        const MIN_TEAM_SIZE = 4;
         const players = ["Michael", "Jokl", "Rainer", "Stephan", "Vanessa", "Damian", "Christian", "Sven", "Luis", "Ulli", "Tina", "Andrea", "Sylvia", "Alex"]
             .map((name, index) => ({ id: index + 1, name, rank: index + 1 }));
 
@@ -117,6 +129,8 @@
         let selectedSlot = null;
 
         function render() {
+            document.getElementById('roster-count').textContent =
+                `Kader: ${players.length} SpielerInnen (mindestens ${MIN_TEAM_SIZE}).`;
             renderBench();
             renderEinzel();
             renderDoppel();
@@ -160,7 +174,7 @@
             const assigned = state.einzel.filter(Boolean).sort((a, b) => a.rank - b.rank);
             state.einzel = [assigned[0] || null, assigned[1] || null];
             [0, 1].forEach(i => {
-                const slot = document.querySelectorAll('#match-container .match-card .slot')[i];
+                const slot = document.querySelector(`#e${i + 1} .slot`);
                 const p = state.einzel[i];
                 slot.innerHTML = p ? `<div class="font-bold text-yellow-400">${p.name} <span class="text-[9px] text-white/50 ml-1">R${p.rank}</span></div>` : 'Besetzen...';
                 slot.className = `slot ${p ? 'filled' : ''} ${isSlotSelected('einzel', i) ? 'selected-slot' : ''}`;
@@ -169,29 +183,42 @@
 
         function renderDoppel() {
             const list = document.getElementById('doppel-list');
-            const doppelData = state.doppel.map(pair => ({ pair, sum: (pair[0] && pair[1]) ? pair[0].rank + pair[1].rank : 999 }));
-            doppelData.sort((a, b) => a.sum - b.sum);
-            state.doppel = doppelData.map(d => d.pair);
+            const doppelData = state.doppel.map((pair, originalIndex) => ({
+                pair,
+                originalIndex,
+                sum: (pair[0] && pair[1]) ? pair[0].rank + pair[1].rank : 999,
+                strongestRank: pair.filter(Boolean).reduce((best, player) => Math.min(best, player.rank), 999)
+            }));
+            doppelData.slice(0, 2).sort((a, b) =>
+                a.sum - b.sum || a.strongestRank - b.strongestRank
+            ).forEach((match, index) => {
+                state.doppel[index] = match.pair;
+            });
+            state.doppel[2] = doppelData.find(match => match.originalIndex === 2).pair;
 
             list.innerHTML = '';
             state.doppel.forEach((pair, i) => {
-                const sum = (pair[0] && pair[1]) ? pair[0].rank + pair[1].rank : null;
-                list.insertAdjacentHTML('beforeend', `
-                    <div class="match-card">
-                        <div class="flex justify-between items-center mb-1 text-[10px] font-bold text-white/50">
-                            <span>${i+1}. DOPPEL</span>
-                            ${sum ? `<span class="text-yellow-400">SUMME: ${sum}</span>` : ''}
-                        </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div class="slot ${pair[0] ? 'filled' : ''} ${isSlotSelected('doppel', i, 0) ? 'selected-slot' : ''}" onclick="handleDoppelClick(${i}, 0)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 0)">
-                                ${pair[0] ? `<span class="font-bold text-yellow-400">${pair[0].name}</span>` : 'Spieler A'}
-                            </div>
-                            <div class="slot ${pair[1] ? 'filled' : ''} ${isSlotSelected('doppel', i, 1) ? 'selected-slot' : ''}" onclick="handleDoppelClick(${i}, 1)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 1)">
-                                ${pair[1] ? `<span class="font-bold text-yellow-400">${pair[1].name}</span>` : 'Spieler B'}
-                            </div>
-                        </div>
-                    </div>`);
+                list.insertAdjacentHTML('beforeend', renderDoppelCard(pair, i));
             });
+        }
+
+        function renderDoppelCard(pair, i) {
+            const sum = (pair[0] && pair[1]) ? pair[0].rank + pair[1].rank : null;
+            return `
+                <div class="match-card">
+                    <div class="flex justify-between items-center mb-1 text-[10px] font-bold text-white/50">
+                        <span>${i + 1}. DOPPEL</span>
+                        ${sum !== null ? `<span class="text-yellow-400">SUMME: ${sum}</span>` : ''}
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="slot ${pair[0] ? 'filled' : ''} ${isSlotSelected('doppel', i, 0) ? 'selected-slot' : ''}" onclick="handleDoppelClick(${i}, 0)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 0)">
+                            ${pair[0] ? `<span class="font-bold text-yellow-400">${pair[0].name} <span class="text-[9px] text-white/50">R${pair[0].rank}</span></span>` : 'Spieler A'}
+                        </div>
+                        <div class="slot ${pair[1] ? 'filled' : ''} ${isSlotSelected('doppel', i, 1) ? 'selected-slot' : ''}" onclick="handleDoppelClick(${i}, 1)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 1)">
+                            ${pair[1] ? `<span class="font-bold text-yellow-400">${pair[1].name} <span class="text-[9px] text-white/50">R${pair[1].rank}</span></span>` : 'Spieler B'}
+                        </div>
+                    </div>
+                </div>`;
         }
 
         function handleDragOver(event) {
@@ -244,22 +271,51 @@
                 : state.doppel[slot.matchIndex];
             const slotIndex = slot.type === 'einzel' ? slot.matchIndex : slot.playerIndex;
             const currentPlayer = target[slotIndex];
+            const status = document.getElementById('assignment-status');
 
             if (currentPlayer && currentPlayer.id === player.id) {
                 selectedPlayerId = null;
                 selectedSlot = null;
+                status.textContent = '';
                 render();
                 return;
             }
 
-            const otherPlayerInMatch = slot.type === 'einzel'
-                ? state.einzel[1 - slotIndex]
-                : state.doppel[slot.matchIndex][1 - slotIndex];
-            if ((otherPlayerInMatch && otherPlayerInMatch.id === player.id) || getUsage(player.id) >= 2) return;
+            const otherPlayerInMatch = slot.type === 'doppel'
+                ? state.doppel[slot.matchIndex][1 - slotIndex]
+                : null;
+            if (otherPlayerInMatch && otherPlayerInMatch.id === player.id) {
+                status.textContent = 'Eine Person kann nicht beide Positionen derselben Begegnung besetzen.';
+                return;
+            }
+
+            const singlesCount = state.einzel.filter(p => p && p.id === player.id).length;
+            const doublesIndices = state.doppel.reduce((indices, pair, index) => {
+                if (pair.some(p => p && p.id === player.id)) indices.push(index);
+                return indices;
+            }, []);
+
+            let error = '';
+            if (slot.type === 'einzel' && singlesCount >= 1) {
+                error = 'Eine Person darf höchstens ein Einzel spielen.';
+            } else if (slot.type === 'doppel' && doublesIndices.length >= 2) {
+                error = 'Eine Person darf höchstens zwei Doppel spielen.';
+            } else if (getUsage(player.id) >= 2) {
+                error = 'Erlaubt sind ein Einzel und ein Doppel oder zwei Doppel.';
+            } else if (slot.type === 'doppel' && slot.matchIndex < 2
+                && doublesIndices.some(index => index < 2 && index !== slot.matchIndex)) {
+                error = 'Das 1. und 2. Doppel dürfen nicht mit derselben Person besetzt werden.';
+            }
+
+            if (error) {
+                status.textContent = error;
+                return;
+            }
 
             target[slotIndex] = player;
             selectedPlayerId = null;
             selectedSlot = null;
+            status.textContent = '';
             render();
         }
 
@@ -274,7 +330,8 @@
             const singleCardHeight = 112;
             const doubleCardHeight = 148;
             const sectionGap = 34;
-            const height = 300 + 52 + (singleCardHeight + 16) * 2 + sectionGap + 52 + (doubleCardHeight + 16) * 3 + padding;
+            const height = 300 + 52 + (singleCardHeight + 16) * 2 + sectionGap - 16
+                + 52 + (doubleCardHeight + 16) * 3 + padding;
             canvas.width = width;
             canvas.height = height;
 
@@ -322,12 +379,23 @@
                     const x = padding + 32 + columnWidth * index;
                     context.fillStyle = player ? '#1a4731' : '#94a3b8';
                     context.font = 'bold 30px Arial, sans-serif';
-                    context.fillText(player ? player.name : 'Noch offen', x, nameY);
-                    if (player) {
-                        context.fillStyle = '#64748b';
-                        context.font = '20px Arial, sans-serif';
-                        context.fillText(`Rang ${player.rank}`, x, nameY + 38);
+                    if (!player) {
+                        context.fillText('Noch offen', x, nameY, columnWidth - 16);
+                        return;
                     }
+
+                    const rankLabel = `Rang ${player.rank}`;
+                    context.font = '20px Arial, sans-serif';
+                    const rankWidth = context.measureText(rankLabel).width;
+                    context.font = 'bold 30px Arial, sans-serif';
+                    const nameWidth = Math.min(
+                        context.measureText(player.name).width,
+                        columnWidth - rankWidth - 24
+                    );
+                    context.fillText(player.name, x, nameY, nameWidth);
+                    context.fillStyle = '#64748b';
+                    context.font = '20px Arial, sans-serif';
+                    context.fillText(rankLabel, x + nameWidth + 8, nameY + 5);
                 });
             }
 
