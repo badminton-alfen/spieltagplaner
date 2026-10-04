@@ -45,6 +45,10 @@
             outline-offset: 2px;
             background: rgba(250, 204, 21, 0.15);
         }
+        .slot.selected-slot {
+            outline: 2px solid #fff;
+            outline-offset: 2px;
+        }
         .slot.filled { 
             border-style: solid; 
             background: rgba(250, 204, 21, 0.2); 
@@ -104,6 +108,7 @@
             doppel: [[null, null], [null, null], [null, null]]
         };
         let selectedPlayerId = null;
+        let selectedSlot = null;
 
         function render() {
             renderBench();
@@ -125,7 +130,16 @@
                     event.dataTransfer.setData('text/plain', String(p.id));
                     event.dataTransfer.effectAllowed = 'move';
                 };
-                div.onclick = () => { if(count < 2 || isSelected) { selectedPlayerId = isSelected ? null : p.id; render(); } };
+                div.onclick = () => {
+                    if (selectedSlot) {
+                        assignPlayer(selectedSlot, p);
+                        return;
+                    }
+                    if (count < 2 || isSelected) {
+                        selectedPlayerId = isSelected ? null : p.id;
+                        render();
+                    }
+                };
                 bench.appendChild(div);
             });
         }
@@ -143,7 +157,7 @@
                 const slot = document.querySelectorAll('#match-container .match-card .slot')[i];
                 const p = state.einzel[i];
                 slot.innerHTML = p ? `<div class="font-bold text-yellow-400">${p.name} <span class="text-[9px] text-white/50 ml-1">R${p.rank}</span></div>` : 'Besetzen...';
-                slot.className = `slot ${p ? 'filled' : ''}`;
+                slot.className = `slot ${p ? 'filled' : ''} ${isSlotSelected('einzel', i) ? 'selected-slot' : ''}`;
             });
         }
 
@@ -163,10 +177,10 @@
                             ${sum ? `<span class="text-yellow-400">SUMME: ${sum}</span>` : ''}
                         </div>
                         <div class="grid grid-cols-2 gap-2">
-                            <div class="slot ${pair[0] ? 'filled' : ''}" onclick="handleDoppelClick(${i}, 0)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 0)">
+                            <div class="slot ${pair[0] ? 'filled' : ''} ${isSlotSelected('doppel', i, 0) ? 'selected-slot' : ''}" onclick="handleDoppelClick(${i}, 0)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 0)">
                                 ${pair[0] ? `<span class="font-bold text-yellow-400">${pair[0].name}</span>` : 'Spieler A'}
                             </div>
-                            <div class="slot ${pair[1] ? 'filled' : ''}" onclick="handleDoppelClick(${i}, 1)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 1)">
+                            <div class="slot ${pair[1] ? 'filled' : ''} ${isSlotSelected('doppel', i, 1) ? 'selected-slot' : ''}" onclick="handleDoppelClick(${i}, 1)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 1)">
                                 ${pair[1] ? `<span class="font-bold text-yellow-400">${pair[1].name}</span>` : 'Spieler B'}
                             </div>
                         </div>
@@ -188,30 +202,58 @@
             const player = players.find(p => p.id === playerId);
             if (!player) return;
 
-            const target = type === 'einzel'
-                ? state.einzel
-                : state.doppel[matchIndex];
-            const slotIndex = type === 'einzel' ? matchIndex : playerIndex;
-            const currentPlayer = target[slotIndex];
-            if (currentPlayer && currentPlayer.id === player.id) return;
-
-            if (getUsage(player.id) >= 2) return;
-
-            target[slotIndex] = player;
-            selectedPlayerId = null;
-            render();
+            assignPlayer({ type, matchIndex, playerIndex: type === 'einzel' ? null : playerIndex }, player);
         }
 
         function handleSlotClick(el, type) {
             const index = Array.from(document.querySelectorAll('#e1 .slot, #e2 .slot')).indexOf(el);
-            state.einzel[index] = selectedPlayerId ? players.find(p => p.id === selectedPlayerId) : null;
-            selectedPlayerId = null;
-            render();
+            handleSlotSelection({ type, matchIndex: index, playerIndex: null });
         }
 
         function handleDoppelClick(pairIdx, playerIdx) {
-            state.doppel[pairIdx][playerIdx] = selectedPlayerId ? players.find(p => p.id === selectedPlayerId) : null;
+            handleSlotSelection({ type: 'doppel', matchIndex: pairIdx, playerIndex: playerIdx });
+        }
+
+        function handleSlotSelection(slot) {
+            if (selectedPlayerId !== null) {
+                const player = players.find(p => p.id === selectedPlayerId);
+                if (player) assignPlayer(slot, player);
+                return;
+            }
+
+            selectedSlot = isSlotSelected(slot.type, slot.matchIndex, slot.playerIndex) ? null : slot;
+            render();
+        }
+
+        function isSlotSelected(type, matchIndex, playerIndex = null) {
+            return selectedSlot
+                && selectedSlot.type === type
+                && selectedSlot.matchIndex === matchIndex
+                && selectedSlot.playerIndex === playerIndex;
+        }
+
+        function assignPlayer(slot, player) {
+            const target = slot.type === 'einzel'
+                ? state.einzel
+                : state.doppel[slot.matchIndex];
+            const slotIndex = slot.type === 'einzel' ? slot.matchIndex : slot.playerIndex;
+            const currentPlayer = target[slotIndex];
+
+            if (currentPlayer && currentPlayer.id === player.id) {
+                selectedPlayerId = null;
+                selectedSlot = null;
+                render();
+                return;
+            }
+
+            const otherPlayerInMatch = slot.type === 'einzel'
+                ? state.einzel[1 - slotIndex]
+                : state.doppel[slot.matchIndex][1 - slotIndex];
+            if ((otherPlayerInMatch && otherPlayerInMatch.id === player.id) || getUsage(player.id) >= 2) return;
+
+            target[slotIndex] = player;
             selectedPlayerId = null;
+            selectedSlot = null;
             render();
         }
 
