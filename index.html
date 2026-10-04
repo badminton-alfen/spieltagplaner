@@ -15,7 +15,7 @@
             font-family: 'Inter', sans-serif; 
             color: #f8fafc;
             background-image: linear-gradient(rgba(26, 71, 49, 0.95), rgba(26, 71, 49, 0.95)), 
-                              url('https://i0.wp.com/www.alfen.de/wp-content/uploads/2016/05/sva-logo-neu.gif');
+                              url('https://www.rwalfen.de/img/rwa.gif');
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
@@ -28,7 +28,7 @@
             border-left: 4px solid var(--sva-yellow); 
             transition: all 0.5s ease; 
         }
-        .slot { 
+        .slot {
             min-height: 48px; 
             background: rgba(255,255,255,0.05); 
             border: 1px dashed rgba(255,255,255,0.2); 
@@ -39,6 +39,11 @@
             margin-top: 5px; 
             cursor: pointer; 
             font-size: 0.9rem; 
+        }
+        .slot.drag-over {
+            outline: 2px solid var(--sva-yellow);
+            outline-offset: 2px;
+            background: rgba(250, 204, 21, 0.15);
         }
         .slot.filled { 
             border-style: solid; 
@@ -53,8 +58,8 @@
 <body class="p-4 pb-48">
 
     <header class="mb-8 text-center pt-4">
-        <img src="https://i0.wp.com/www.alfen.de/wp-content/uploads/2016/05/sva-logo-neu.gif" alt="SVA Logo" class="h-16 mx-auto mb-4 drop-shadow-lg">
-        <h1 class="text-2xl font-black text-white uppercase tracking-tighter">Hobbyligasaison 25/26</h1>
+        <img src="https://www.rwalfen.de/img/RWA-100-rot.png" alt="SVA Logo" class="h-16 mx-auto mb-4 drop-shadow-lg">
+        <h1 class="text-2xl font-black text-white uppercase tracking-tighter">Hobbyligasaison 26/27</h1>
     </header>
 
     <div class="max-w-md mx-auto space-y-8" id="match-container">
@@ -62,11 +67,11 @@
             <h2 class="text-[10px] font-bold text-yellow-400/80 ml-1 uppercase tracking-widest">Einzel Aufstellung</h2>
             <div class="match-card" id="e1">
                 <h3 class="font-bold text-xs text-white/70 mb-1">1. EINZEL</h3>
-                <div class="slot" onclick="handleSlotClick(this, 'einzel')">Besetzen...</div>
+                <div class="slot" onclick="handleSlotClick(this, 'einzel')" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'einzel', 0)">Besetzen...</div>
             </div>
             <div class="match-card" id="e2">
                 <h3 class="font-bold text-xs text-white/70 mb-1">2. EINZEL</h3>
-                <div class="slot" onclick="handleSlotClick(this, 'einzel')">Besetzen...</div>
+                <div class="slot" onclick="handleSlotClick(this, 'einzel')" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'einzel', 1)">Besetzen...</div>
             </div>
         </div>
 
@@ -91,7 +96,7 @@
     </div>
 
     <script>
-        const players = ["Michael", "Rainer", "Jokl", "Stephan", "Vanessa", "Damian", "Christian", "Sven", "Luis", "Ulli", "Ludwig", "Tina", "Andrea", "Sylvia", "Alex"]
+        const players = ["Michael", "Jokl", "Rainer", "Stephan", "Vanessa", "Damian", "Christian", "Sven", "Luis", "Ulli", "Tina", "Andrea", "Sylvia", "Alex"]
             .map((name, index) => ({ id: index + 1, name, rank: index + 1 }));
 
         let state = {
@@ -115,6 +120,11 @@
                 const div = document.createElement('div');
                 div.className = `player-chip shrink-0 px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all ${isSelected ? 'bg-yellow-400 text-green-900 scale-105' : 'bg-white/10 text-white'} ${count >= 2 ? 'opacity-20 grayscale' : ''}`;
                 div.innerHTML = `<span class="opacity-60 mr-1">${p.rank}.</span> ${p.name}`;
+                div.draggable = true;
+                div.ondragstart = event => {
+                    event.dataTransfer.setData('text/plain', String(p.id));
+                    event.dataTransfer.effectAllowed = 'move';
+                };
                 div.onclick = () => { if(count < 2 || isSelected) { selectedPlayerId = isSelected ? null : p.id; render(); } };
                 bench.appendChild(div);
             });
@@ -153,15 +163,43 @@
                             ${sum ? `<span class="text-yellow-400">SUMME: ${sum}</span>` : ''}
                         </div>
                         <div class="grid grid-cols-2 gap-2">
-                            <div class="slot ${pair[0] ? 'filled' : ''}" onclick="handleDoppelClick(${i}, 0)">
+                            <div class="slot ${pair[0] ? 'filled' : ''}" onclick="handleDoppelClick(${i}, 0)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 0)">
                                 ${pair[0] ? `<span class="font-bold text-yellow-400">${pair[0].name}</span>` : 'Spieler A'}
                             </div>
-                            <div class="slot ${pair[1] ? 'filled' : ''}" onclick="handleDoppelClick(${i}, 1)">
+                            <div class="slot ${pair[1] ? 'filled' : ''}" onclick="handleDoppelClick(${i}, 1)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 1)">
                                 ${pair[1] ? `<span class="font-bold text-yellow-400">${pair[1].name}</span>` : 'Spieler B'}
                             </div>
                         </div>
                     </div>`);
             });
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('drag-over');
+            event.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDrop(event, type, matchIndex, playerIndex) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('drag-over');
+
+            const playerId = Number(event.dataTransfer.getData('text/plain'));
+            const player = players.find(p => p.id === playerId);
+            if (!player) return;
+
+            const target = type === 'einzel'
+                ? state.einzel
+                : state.doppel[matchIndex];
+            const slotIndex = type === 'einzel' ? matchIndex : playerIndex;
+            const currentPlayer = target[slotIndex];
+            if (currentPlayer && currentPlayer.id === player.id) return;
+
+            if (getUsage(player.id) >= 2) return;
+
+            target[slotIndex] = player;
+            selectedPlayerId = null;
+            render();
         }
 
         function handleSlotClick(el, type) {
