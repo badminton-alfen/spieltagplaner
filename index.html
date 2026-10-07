@@ -92,7 +92,7 @@
             <summary class="cursor-pointer font-bold text-yellow-400">Aufstellungsregeln anzeigen</summary>
             <div class="mt-3">
                 <p id="roster-count" class="mb-2"></p>
-                <p>Alle Spiele können männlich, weiblich oder mixed besetzt werden. Einzel und die ersten beiden Doppel werden nach Ranglistenstärke aufgestellt. Bei Punktgleichheit der Doppel spielt das Doppel mit dem stärksten Einzelspieler an Position 1.</p>
+                <p>Alle Spiele können männlich, weiblich oder mixed besetzt werden. Die Einzel werden nach Ranglistenstärke aufgestellt. Alle drei Doppel werden nach der Summe ihrer Ranglistenplätze sortiert. Bei Punktgleichheit spielt das Doppel mit dem stärksten Einzelspieler an Position 1.</p>
                 <p class="mt-2">Pro Person sind ein Einzel und ein Doppel oder zwei Doppel erlaubt. Nicht erlaubt ist ein Einsatz zugleich im 1. und 2. Doppel; ein Einsatz im 3. Doppel ist zusätzlich möglich. Falsche Aufstellungen führen zum Spielverlust der betroffenen Begegnung.</p>
             </div>
         </details>
@@ -103,6 +103,9 @@
             <div id="bench" class="flex gap-2 overflow-x-auto pb-4 custom-scrollbar"></div>
             
             <div class="mt-4 text-center">
+                <button id="share-link-button" onclick="shareLineupLink()" class="inline-flex items-center text-[11px] text-green-950 font-bold hover:bg-yellow-300 transition-colors bg-yellow-400 px-4 py-2 rounded-full">
+                    Aufstellungslink kopieren
+                </button>
                 <button id="share-button" onclick="shareLineup()" class="inline-flex items-center text-[11px] text-green-950 font-bold hover:bg-yellow-300 transition-colors bg-yellow-400 px-4 py-2 rounded-full">
                     Aufstellung als Bild teilen
                 </button>
@@ -118,7 +121,7 @@
 
     <script>
         const MIN_TEAM_SIZE = 4;
-        const players = ["Michael", "Jokl", "Rainer", "Stephan", "Vanessa", "Damian", "Christian", "Sven", "Luis", "Ulli", "Tina", "Andrea", "Sylvia", "Alex"]
+        const players = ["Michael","Niklas", "Jokl", "Rainer", "Stephan", "Vanessa", "Damian", "Christian", "Sven", "Luis", "Ulli", "Tina", "Andrea", "Sylvia", "Alex"]
             .map((name, index) => ({ id: index + 1, name, rank: index + 1 }));
 
         let state = {
@@ -183,18 +186,14 @@
 
         function renderDoppel() {
             const list = document.getElementById('doppel-list');
-            const doppelData = state.doppel.map((pair, originalIndex) => ({
+            const doppelData = state.doppel.map(pair => ({
                 pair,
-                originalIndex,
                 sum: (pair[0] && pair[1]) ? pair[0].rank + pair[1].rank : 999,
                 strongestRank: pair.filter(Boolean).reduce((best, player) => Math.min(best, player.rank), 999)
-            }));
-            doppelData.slice(0, 2).sort((a, b) =>
+            })).sort((a, b) =>
                 a.sum - b.sum || a.strongestRank - b.strongestRank
-            ).forEach((match, index) => {
-                state.doppel[index] = match.pair;
-            });
-            state.doppel[2] = doppelData.find(match => match.originalIndex === 2).pair;
+            );
+            state.doppel = doppelData.map(match => match.pair);
 
             list.innerHTML = '';
             state.doppel.forEach((pair, i) => {
@@ -219,6 +218,98 @@
                         </div>
                     </div>
                 </div>`;
+        }
+
+        function getLineupParameter() {
+            return [
+                ...state.einzel,
+                ...state.doppel.flat()
+            ].map(player => player ? player.id : '-').join(',');
+        }
+
+        function updateLineupUrl() {
+            const url = new URL(window.location.href);
+            url.searchParams.set('lineup', getLineupParameter());
+            window.history.replaceState(null, '', url);
+            return url.href;
+        }
+
+        function loadLineupFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            if (!params.has('lineup')) return;
+
+            const values = params.get('lineup').split(',');
+            const playerSlots = values.map(value => {
+                if (value === '-') return null;
+                if (!/^\d+$/.test(value)) return undefined;
+                return players.find(player => player.id === Number(value));
+            });
+
+            if (playerSlots.length !== 8 || playerSlots.some(player => player === undefined)) {
+                document.getElementById('assignment-status').textContent =
+                    'Die Aufstellung aus dem Link ist ungültig und konnte nicht geladen werden.';
+                return;
+            }
+
+            const lineup = {
+                einzel: playerSlots.slice(0, 2),
+                doppel: [
+                    playerSlots.slice(2, 4),
+                    playerSlots.slice(4, 6),
+                    playerSlots.slice(6, 8)
+                ]
+            };
+            const appearances = new Map();
+            let valid = true;
+
+            lineup.einzel.forEach(player => {
+                if (!player) return;
+                const count = appearances.get(player.id) || { singles: 0, doubles: [] };
+                count.singles += 1;
+                appearances.set(player.id, count);
+            });
+            lineup.doppel.forEach((pair, index) => {
+                if (pair[0] && pair[1] && pair[0].id === pair[1].id) valid = false;
+                pair.forEach(player => {
+                    if (!player) return;
+                    const count = appearances.get(player.id) || { singles: 0, doubles: [] };
+                    count.doubles.push(index);
+                    appearances.set(player.id, count);
+                });
+            });
+
+            appearances.forEach(count => {
+                if (count.singles > 1 || count.doubles.length > 2 || count.singles + count.doubles.length > 2
+                    || (count.doubles.includes(0) && count.doubles.includes(1))) {
+                    valid = false;
+                }
+            });
+
+            if (!valid) {
+                document.getElementById('assignment-status').textContent =
+                    'Die Aufstellung aus dem Link verstößt gegen die Aufstellungsregeln und konnte nicht geladen werden.';
+                return;
+            }
+
+            state = lineup;
+        }
+
+        async function shareLineupLink() {
+            const button = document.getElementById('share-link-button');
+            const status = document.getElementById('share-status');
+            const url = updateLineupUrl();
+            button.disabled = true;
+
+            try {
+                if (!navigator.clipboard) throw new Error('Die Zwischenablage ist nicht verfügbar.');
+                await navigator.clipboard.writeText(url);
+                status.textContent = 'Aufstellungslink wurde kopiert.';
+            } catch (error) {
+                console.error('Aufstellungslink konnte nicht kopiert werden:', error);
+                status.textContent = 'Der Link konnte nicht in die Zwischenablage kopiert werden.';
+            } finally {
+                button.disabled = false;
+            }
         }
 
         function handleDragOver(event) {
@@ -317,6 +408,7 @@
             selectedSlot = null;
             status.textContent = '';
             render();
+            updateLineupUrl();
         }
 
         function createLineupImage() {
@@ -461,6 +553,7 @@
             }
         }
 
+        loadLineupFromUrl();
         render();
     </script>
 </body>
