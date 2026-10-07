@@ -102,21 +102,23 @@
         <div class="bg-slate-900/90 backdrop-blur-md border-t border-white/10 p-4">
             <div id="bench" class="flex gap-2 overflow-x-auto pb-4 custom-scrollbar"></div>
             
-            <div class="mt-4 text-center">
+            <div class="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-center">
                 <button id="share-link-button" onclick="shareLineupLink()" class="inline-flex items-center text-[11px] text-green-950 font-bold hover:bg-yellow-300 transition-colors bg-yellow-400 px-4 py-2 rounded-full">
-                    Aufstellungslink kopieren
+                    Link kopieren
                 </button>
                 <button id="share-button" onclick="shareLineup()" class="inline-flex items-center text-[11px] text-green-950 font-bold hover:bg-yellow-300 transition-colors bg-yellow-400 px-4 py-2 rounded-full">
-                    Aufstellung als Bild teilen
+                    Bild teilen
                 </button>
                 <button id="reset-button" type="button" onclick="resetLineup()" class="inline-flex items-center text-[11px] text-white font-bold hover:bg-red-700 transition-colors bg-red-800/80 px-4 py-2 rounded-full border border-white/20">
-                    Aufstellung zurücksetzen
+                    Zurücksetzen
                 </button>
                 <a href="https://dbv.turnier.de/sport/team.aspx?id=E4A5657E-EF6C-488C-958B-BE46490FD7E7&team=67" 
                    target="_blank" 
-                   class="inline-flex items-center text-[11px] text-yellow-400 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-full border border-yellow-400/30 mt-2">
-                    📊 Offizielle Staffel-Tabelle öffnen
+                   class="inline-flex items-center text-[11px] text-yellow-400 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-full border border-yellow-400/30">
+                    📊 Staffeltabelle
                 </a>
+            </div>
+            <div class="text-center">
                 <p id="share-status" class="text-[11px] text-white/70 mt-2" role="status" aria-live="polite"></p>
             </div>
         </div>
