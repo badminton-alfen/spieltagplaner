@@ -109,6 +109,9 @@
                 <button id="share-button" onclick="shareLineup()" class="inline-flex items-center text-[11px] text-green-950 font-bold hover:bg-yellow-300 transition-colors bg-yellow-400 px-4 py-2 rounded-full">
                     Aufstellung als Bild teilen
                 </button>
+                <button id="reset-button" type="button" onclick="resetLineup()" class="inline-flex items-center text-[11px] text-white font-bold hover:bg-red-700 transition-colors bg-red-800/80 px-4 py-2 rounded-full border border-white/20">
+                    Aufstellung zurücksetzen
+                </button>
                 <a href="https://dbv.turnier.de/sport/team.aspx?id=E4A5657E-EF6C-488C-958B-BE46490FD7E7&team=67" 
                    target="_blank" 
                    class="inline-flex items-center text-[11px] text-yellow-400 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-full border border-yellow-400/30 mt-2">
@@ -232,6 +235,22 @@
             url.searchParams.set('lineup', getLineupParameter());
             window.history.replaceState(null, '', url);
             return url.href;
+        }
+
+        function resetLineup() {
+            state = {
+                einzel: [null, null],
+                doppel: [[null, null], [null, null], [null, null]]
+            };
+            selectedPlayerId = null;
+            selectedSlot = null;
+
+            const url = new URL(window.location.href);
+            url.searchParams.delete('lineup');
+            window.history.replaceState(null, '', url);
+
+            document.getElementById('assignment-status').textContent = 'Aufstellung wurde zurückgesetzt.';
+            render();
         }
 
         function loadLineupFromUrl() {
