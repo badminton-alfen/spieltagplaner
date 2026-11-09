@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Hobbyligasaison 26/27</title>
+    <link rel="icon" href="https://www.rwalfen.de/favicon-rwa.ico" type="image/x-icon">
+    <link rel="icon" href="https://www.rwalfen.de/favicon-rwa-32x32.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="https://www.rwalfen.de/apple-touch-rwa-icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
@@ -126,8 +129,24 @@
 
     <script>
         const MIN_TEAM_SIZE = 4;
-        const players = ["Michael","Niklas", "Jokl", "Rainer", "Stephan", "Vanessa", "Damian", "Christian", "Sven", "Luis", "Ulli", "Tina", "Andrea", "Sylvia", "Alex"]
-            .map((name, index) => ({ id: index + 1, name, rank: index + 1 }));
+        // Einsatzzahlen im Saisonverlauf hier manuell aktualisieren.
+        const players = [
+            { name: "Michael", appearances: 0 },
+            { name: "Niklas", appearances: 0 },
+            { name: "Jokl", appearances: 0 },
+            { name: "Rainer", appearances: 0 },
+            { name: "Stephan", appearances: 0 },
+            { name: "Vanessa", appearances: 0 },
+            { name: "Damian", appearances: 0 },
+            { name: "Christian", appearances: 0 },
+            { name: "Sven", appearances: 0 },
+            { name: "Luis", appearances: 0 },
+            { name: "Ulli", appearances: 0 },
+            { name: "Tina", appearances: 0 },
+            { name: "Andrea", appearances: 0 },
+            { name: "Sylvia", appearances: 0 },
+            { name: "Alex", appearances: 0 }
+        ].map((player, index) => ({ ...player, id: index + 1, rank: index + 1 }));
 
         let state = {
             einzel: [null, null],
@@ -135,6 +154,10 @@
         };
         let selectedPlayerId = null;
         let selectedSlot = null;
+
+        function formatPlayerName(player) {
+            return `${player.name} (${player.appearances})`;
+        }
 
         function render() {
             document.getElementById('roster-count').textContent =
@@ -152,7 +175,7 @@
                 const isSelected = selectedPlayerId === p.id;
                 const div = document.createElement('div');
                 div.className = `player-chip shrink-0 px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all ${isSelected ? 'bg-yellow-400 text-green-900 scale-105' : 'bg-white/10 text-white'} ${count >= 2 ? 'opacity-20 grayscale' : ''}`;
-                div.innerHTML = `<span class="opacity-60 mr-1">${p.rank}.</span> ${p.name}`;
+                div.innerHTML = `<span class="opacity-60 mr-1">${p.rank}.</span> ${formatPlayerName(p)}`;
                 div.draggable = true;
                 div.ondragstart = event => {
                     event.dataTransfer.setData('text/plain', String(p.id));
@@ -184,7 +207,7 @@
             [0, 1].forEach(i => {
                 const slot = document.querySelector(`#e${i + 1} .slot`);
                 const p = state.einzel[i];
-                slot.innerHTML = p ? `<div class="font-bold text-yellow-400">${p.name} <span class="text-[9px] text-white/50 ml-1">R${p.rank}</span></div>` : 'Besetzen...';
+                slot.innerHTML = p ? `<div class="font-bold text-yellow-400">${formatPlayerName(p)} <span class="text-[9px] text-white/50 ml-1">R${p.rank}</span></div>` : 'Besetzen...';
                 slot.className = `slot ${p ? 'filled' : ''} ${isSlotSelected('einzel', i) ? 'selected-slot' : ''}`;
             });
         }
@@ -216,10 +239,10 @@
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div class="slot ${pair[0] ? 'filled' : ''} ${isSlotSelected('doppel', i, 0) ? 'selected-slot' : ''}" onclick="handleDoppelClick(${i}, 0)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 0)">
-                            ${pair[0] ? `<span class="font-bold text-yellow-400">${pair[0].name} <span class="text-[9px] text-white/50">R${pair[0].rank}</span></span>` : 'Spieler A'}
+                            ${pair[0] ? `<span class="font-bold text-yellow-400">${formatPlayerName(pair[0])} <span class="text-[9px] text-white/50">R${pair[0].rank}</span></span>` : 'Spieler A'}
                         </div>
                         <div class="slot ${pair[1] ? 'filled' : ''} ${isSlotSelected('doppel', i, 1) ? 'selected-slot' : ''}" onclick="handleDoppelClick(${i}, 1)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event, 'doppel', ${i}, 1)">
-                            ${pair[1] ? `<span class="font-bold text-yellow-400">${pair[1].name} <span class="text-[9px] text-white/50">R${pair[1].rank}</span></span>` : 'Spieler B'}
+                            ${pair[1] ? `<span class="font-bold text-yellow-400">${formatPlayerName(pair[1])} <span class="text-[9px] text-white/50">R${pair[1].rank}</span></span>` : 'Spieler B'}
                         </div>
                     </div>
                 </div>`;
@@ -498,14 +521,15 @@
                     }
 
                     const rankLabel = `Rang ${player.rank}`;
+                    const playerName = formatPlayerName(player);
                     context.font = '20px Arial, sans-serif';
                     const rankWidth = context.measureText(rankLabel).width;
                     context.font = 'bold 30px Arial, sans-serif';
                     const nameWidth = Math.min(
-                        context.measureText(player.name).width,
+                        context.measureText(playerName).width,
                         columnWidth - rankWidth - 24
                     );
-                    context.fillText(player.name, x, nameY, nameWidth);
+                    context.fillText(playerName, x, nameY, nameWidth);
                     context.fillStyle = '#64748b';
                     context.font = '20px Arial, sans-serif';
                     context.fillText(rankLabel, x + nameWidth + 8, nameY + 5);
